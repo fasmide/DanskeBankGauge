@@ -6,9 +6,17 @@ import (
 	"net/http"
 
 	"github.com/fasmide/DanskeBankGauge/nodejs"
+	"github.com/spf13/viper"
 )
 
+func init() {
+	viper.SetDefault("listen", "localhost:1234")
+}
+
 func main() {
+
+	viper.AutomaticEnv()
+
 	n, err := nodejs.NewNodejs()
 	if err != nil {
 		panic(err)
@@ -24,6 +32,8 @@ func main() {
 
 	log.Printf("err: %s", result)
 
-	http.ListenAndServe("localhost:1234", nil)
+	// lets just go with the default servemux today
+	log.Printf("Listening on %s", viper.GetString("listen"))
+	http.ListenAndServe(viper.GetString("listen"), nil)
 
 }

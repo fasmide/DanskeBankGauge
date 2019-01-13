@@ -60,9 +60,10 @@ func NewNodejs() (*Nodejs, error) {
 	spec.Root.Readonly = true
 	spec.Root.Path = path.Join(cwd, "rootfs")
 	log.Printf("launching with rootfs %s", spec.Root.Path)
+
 	// create a config from the default spec
 	config, err := specconv.CreateLibcontainerConfig(&specconv.CreateOpts{
-		CgroupName: "pdbgauge",
+		CgroupName: "dbgauge",
 		Spec:       spec,
 	})
 
@@ -71,7 +72,7 @@ func NewNodejs() (*Nodejs, error) {
 	}
 
 	// create a container factory
-	factory, err := libcontainer.New("/tmp/ProjectDanskeBankGauge-libcontainer", libcontainer.Cgroupfs, libcontainer.InitArgs(os.Args[0], "init"))
+	factory, err := libcontainer.New("/tmp/DanskeBankGauge-libcontainer", libcontainer.Cgroupfs, libcontainer.InitArgs(os.Args[0], "init"))
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +131,7 @@ func NewNodejs() (*Nodejs, error) {
 	return &n, nil
 }
 
+// Close closes in stdin pipe
 func (n *Nodejs) Close() {
 	n.PipeWriter.Close()
 }
