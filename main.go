@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/fasmide/ProjectDanskeBankGauge/nodejs"
+	"github.com/fasmide/DanskeBankGauge/nodejs"
 )
 
 func main() {
