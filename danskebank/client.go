@@ -2,6 +2,7 @@ package danskebank
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 )
@@ -26,10 +27,12 @@ type JavascriptEvaluator func([]byte) ([]byte, error)
 // SignerURL is used to fetch "javascript sealer" - some obfuscated javascript
 // providing a performLogonServiceCode_v2 which takes social security number and
 // a service code and provides a LogonPackage which must be posted to the `LogonURL`
-const SignerURL = "https://apiebank.danskebank.com/ebanking/ext/Functions?stage=LogonStep1&secsystem=SC&brand=DB&channel=MOB"
+// const SignerURL = "https://apiebank.danskebank.com/ebanking/ext/Functions?stage=LogonStep1&secsystem=SC&brand=DB&channel=MOB"
+const SignerURL = "http://localhost/signer.js"
 
 // LogonURL is used to post the result of the above sealer
-const LogonURL = "https://apiebank.danskebank.com/ebanking/ext/logon"
+//const LogonURL = "https://apiebank.danskebank.com/ebanking/ext/logon"
+const LogonURL = "http://localhost/logon"
 
 // Logon creates a new session with the mobile api
 func (c *Client) Logon(cpr, sc string) error {
@@ -37,12 +40,11 @@ func (c *Client) Logon(cpr, sc string) error {
 		return fmt.Errorf("this client is already logged on")
 	}
 
-	req, err := http.NewRequest(http.MethodGet, "http://localhost", nil)
+	req, err := c.NewRequest(http.MethodGet, SignerURL, nil)
 	if err != nil {
 		return fmt.Errorf("unable to create request: %s", err)
 	}
 
-	c.setHeaders(req)
 	// add content-type to default headers
 	req.Header["content-type"] = []string{"text/plain"}
 
@@ -60,8 +62,17 @@ func (c *Client) Logon(cpr, sc string) error {
 	return nil
 }
 
-func (c *Client) setHeaders(r *http.Request) {
+// NewRequest initializes a request with required headers
+func (c *Client) NewRequest(method string, url string, body io.Reader) (*http.Request, error) {
+	r, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
 
+	// if we have an auth token, add header
+	if c.auth != "" {
+		r.Header["authorization"] = []string{c.auth}
+	}
 	// Not using the Set here to preserve header case
 	r.Header["x-ibm-client-id"] = []string{c.IbmID}
 	r.Header["x-ibm-client-secret"] = []string{c.IbmSecret}
@@ -70,5 +81,5 @@ func (c *Client) setHeaders(r *http.Request) {
 	r.Header["x-app-culture"] = []string{"da-DK"}
 
 	r.Header.Set("User-Agent", "okhttp/3.11.0")
-
+	return r, nil
 }
