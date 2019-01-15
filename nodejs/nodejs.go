@@ -121,13 +121,13 @@ func NewNodejs() (*Nodejs, error) {
 		// wait for the process to finish.
 		_, err := process.Wait()
 		if err != nil {
-			log.Printf("error waiting for process to exit: %s", err)
+			stdoutWriter.CloseWithError(err)
 		}
 
 		// destroy the container.
 		container.Destroy()
-		stdoutWriter.Close()
 		stdinWriter.Close()
+		stdoutWriter.Close()
 	}()
 
 	return &n, nil
@@ -143,11 +143,14 @@ func Eval(code io.Reader) ([]byte, error) {
 
 	n, err := NewNodejs()
 	if err != nil {
-		return nil, fmt.Errorf("unable to evaluate: %s", err)
+		return nil, fmt.Errorf("unable to initiate nodejs: %s", err)
 	}
+	// tmpFile, _ := ioutil.TempFile("/tmp", "javascræpt")
 
-	io.Copy(n, code)
+	// io.Copy(tmpFile, code)
+	// log.Printf("%s written", tmpFile.Name())
 	// n.Write([]byte("console.log('her er javascript', true, 3245); process.exit(0);"))
+	io.Copy(n, code)
 	n.Close()
 
 	result, err := ioutil.ReadAll(n)

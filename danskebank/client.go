@@ -2,12 +2,12 @@ package danskebank
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
+	"text/template"
 )
 
 // Client represents a session with the mobile API
@@ -38,6 +38,11 @@ const SignerURL = "http://localhost/signer.js"
 const LogonURL = "http://localhost/logon"
 
 // Logon creates a new session with the mobile api
+// 	This is quite a long process, involving:
+//	* Fetching some javascript from their api (they seem to call it Javascript Sealer)
+// 	* Evaluating this javascript
+// 	* Using a method from the evaluated javascript to create a LogonPackage
+//	* Posting the logonpackage to their api, to receive an auth token
 func (c *Client) Logon(cpr, sc string) error {
 	if c.auth != "" {
 		return fmt.Errorf("this client is already logged on")
@@ -84,7 +89,19 @@ func (c *Client) Logon(cpr, sc string) error {
 	if err != nil {
 		return fmt.Errorf("could not compute logon package: %s", err)
 	}
-	log.Printf("logonPackage : %s", result)
+
+	// parse the received logon package
+	logonPackage := LogonPackage{}
+	err = json.Unmarshal(result, &logonPackage)
+	if err != nil {
+		return fmt.Errorf("unable to parse json from sealer: %s", err)
+	}
+
+	// try to figure out if the package is valid
+	if !logonPackage.Valid() {
+		return fmt.Errorf("LogonPackage from sealer was not valid: %s", result)
+	}
+
 	return nil
 }
 

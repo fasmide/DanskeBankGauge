@@ -1,4 +1,4 @@
 FROM node:lts-alpine
 
-RUN npm -g install atob btoa
+RUN npm install atob btoa
 

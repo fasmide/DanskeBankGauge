@@ -24,7 +24,9 @@ func main() {
 	}
 
 	err := db.Logon("2020202121", "1234")
-	panic(err)
+	if err != nil {
+		log.Printf("unable to logon: %s", err)
+	}
 	// lets just go with the default servemux today
 	log.Printf("Listening on %s", viper.GetString("listen"))
 	http.ListenAndServe(viper.GetString("listen"), nil)
