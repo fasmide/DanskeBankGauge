@@ -23,19 +23,38 @@ type Client struct {
 	IbmSecret string
 }
 
-// JavascriptEvaluator should accept javascript written to it and
-// allow reading of result
+// JavascriptEvaluator should read javascript and return results
 type JavascriptEvaluator func(io.Reader) ([]byte, error)
+
+// NewRequest initializes requests with required headers
+func (c *Client) NewRequest(method string, url string, body io.Reader) (*http.Request, error) {
+	r, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	// if we have an auth token, add header
+	if c.auth != "" {
+		r.Header["authorization"] = []string{c.auth}
+	}
+	// Not using the Set here to preserve header case
+	r.Header["x-ibm-client-id"] = []string{c.IbmID}
+	r.Header["x-ibm-client-secret"] = []string{c.IbmSecret}
+	r.Header["x-app-version"] = []string{"MobileBank android DK 1201367"}
+	r.Header["referer"] = []string{"MobileBanking3 DK"}
+	r.Header["x-app-culture"] = []string{"da-DK"}
+
+	r.Header.Set("User-Agent", "okhttp/3.11.0")
+	return r, nil
+}
 
 // SignerURL is used to fetch "javascript sealer" - some obfuscated javascript
 // providing a performLogonServiceCode_v2 which takes social security number and
 // a service code and provides a LogonPackage which must be posted to the `LogonURL`
-// const SignerURL = "https://apiebank.danskebank.com/ebanking/ext/Functions?stage=LogonStep1&secsystem=SC&brand=DB&channel=MOB"
-const SignerURL = "http://localhost/signer.js"
+const SignerURL = "https://apiebank.danskebank.com/ebanking/ext/Functions?stage=LogonStep1&secsystem=SC&brand=DB&channel=MOB"
 
 // LogonURL is used to post the result of the above sealer
-//const LogonURL = "https://apiebank.danskebank.com/ebanking/ext/logon"
-const LogonURL = "http://localhost/logon"
+const LogonURL = "https://apiebank.danskebank.com/ebanking/ext/logon"
 
 // Logon creates a new session with the mobile api
 // 	This is quite a long process, involving:
@@ -72,6 +91,13 @@ func (c *Client) Logon(cpr, sc string) error {
 		return fmt.Errorf("unable to read sealer: %s", err)
 	}
 
+	// save auth token, it must be used on the next request
+	// NewRequest will ensure it is set correctly
+	c.auth = resp.Header.Get("Persistent-Auth")
+	if c.auth == "" {
+		return fmt.Errorf("when fetching javascript sealer, there was no auth token")
+	}
+
 	// we now have downloaded the javascript sealer, we need to
 	// render and evaluate JSTemplate inside the JavascriptEvaluator
 	t := template.Must(template.New("jstemplate").Parse(JSTemplate))
@@ -102,27 +128,102 @@ func (c *Client) Logon(cpr, sc string) error {
 		return fmt.Errorf("LogonPackage from sealer was not valid: %s", result)
 	}
 
+	payload, err := json.Marshal(logonPackage)
+	if err != nil {
+		return fmt.Errorf("unable to marshal logonpackage: %s", err)
+	}
+
+	// so far so good, we should now take the above logon package and post it to LogonURL
+	req, err = c.NewRequest(http.MethodPost, LogonURL, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("unable create post logonpackage request: %s", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("unable to post logon package: %s", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected statuscode when posting logonpackage (%d): %s", resp.StatusCode, body)
+	}
+
+	// at this point we should have a working auth token
+	c.auth = resp.Header.Get("Persistent-Auth")
+
+	if c.auth == "" {
+		return fmt.Errorf("we failed somewhere - you will never see this error :)")
+	}
 	return nil
 }
 
-// NewRequest initializes a request with required headers
-func (c *Client) NewRequest(method string, url string, body io.Reader) (*http.Request, error) {
-	r, err := http.NewRequest(method, url, body)
+// AccountListURL is the url to POST when asking for accounts
+const AccountListURL = "https://apiebank.danskebank.com/ebanking/ext/e4/account/list"
+
+// AccountListBody is posted to the list URL - not sure if explicitly required
+const AccountListBody = "{\n    \"languageCode\": \"DA\"\n}"
+
+// AccountList lists all accounts
+func (c *Client) AccountList() ([]Account, error) {
+
+	req, err := c.NewRequest(http.MethodPost, AccountListURL, bytes.NewBuffer([]byte(AccountListBody)))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to create account list request: %s", err)
 	}
 
-	// if we have an auth token, add header
-	if c.auth != "" {
-		r.Header["authorization"] = []string{c.auth}
-	}
-	// Not using the Set here to preserve header case
-	r.Header["x-ibm-client-id"] = []string{c.IbmID}
-	r.Header["x-ibm-client-secret"] = []string{c.IbmSecret}
-	r.Header["x-app-version"] = []string{"MobileBank android DK 1201367"}
-	r.Header["referer"] = []string{"MobileBanking3 DK"}
-	r.Header["x-app-culture"] = []string{"da-DK"}
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
-	r.Header.Set("User-Agent", "okhttp/3.11.0")
-	return r, nil
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to post request to accountlist endpoint: %s", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected statuscode from accountlist endpoint (%d): %s", resp.StatusCode, body)
+	}
+
+	// i have not seen this change between requests but one could imagine its supposed to - to fight replay attacks
+	if c.auth != resp.Header.Get("Persistent-Auth") {
+		c.auth = resp.Header.Get("Persistent-Auth")
+	}
+
+	accountResponse := AccountListResponse{}
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&accountResponse)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse json from account list: %s", err)
+	}
+
+	return accountResponse.Accounts, nil
+}
+
+// LogoffURL is the url to POST when signing off
+const LogoffURL = "https://apiebank.danskebank.com/ebanking/ext/logoff"
+
+// Logoff closes a session
+func (c *Client) Logoff() error {
+	req, err := c.NewRequest(http.MethodPost, LogoffURL, bytes.NewBuffer([]byte("{}")))
+	if err != nil {
+		return fmt.Errorf("unable to create logoff request: %s", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("unable send logoff request: %s", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		return fmt.Errorf("unexpected statuscode when logging off (%d): %s", resp.StatusCode, body)
+	}
+
+	c.auth = ""
+	return nil
 }

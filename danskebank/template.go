@@ -1,5 +1,6 @@
 package danskebank
 
+// JSTemplate is used to evaluate the javascript sealer from danskebank
 const JSTemplate = `
 let handler = {
     get: function(target, name) {

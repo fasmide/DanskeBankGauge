@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -23,10 +24,23 @@ func main() {
 		Evaluator: nodejs.Eval,
 	}
 
-	err := db.Logon("2020202121", "1234")
+	err := db.Logon(viper.GetString("ssn"), viper.GetString("sc"))
 	if err != nil {
 		log.Printf("unable to logon: %s", err)
 	}
+
+	accounts, err := db.AccountList()
+	if err != nil {
+		panic(fmt.Sprintf("unable to receive accounts: %s", err))
+
+	}
+	log.Printf("we have accounts: %+v", accounts)
+
+	err = db.Logoff()
+	if err != nil {
+		log.Printf("unable to logoff: %s", err)
+	}
+
 	// lets just go with the default servemux today
 	log.Printf("Listening on %s", viper.GetString("listen"))
 	http.ListenAndServe(viper.GetString("listen"), nil)
