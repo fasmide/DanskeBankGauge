@@ -1,9 +1,12 @@
 package danskebank
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -22,7 +25,7 @@ type Client struct {
 
 // JavascriptEvaluator should accept javascript written to it and
 // allow reading of result
-type JavascriptEvaluator func([]byte) ([]byte, error)
+type JavascriptEvaluator func(io.Reader) ([]byte, error)
 
 // SignerURL is used to fetch "javascript sealer" - some obfuscated javascript
 // providing a performLogonServiceCode_v2 which takes social security number and
@@ -54,11 +57,34 @@ func (c *Client) Logon(cpr, sc string) error {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected status code (%d) when fetching sealer: %s", resp.StatusCode, body)
+	}
+
 	code, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("unable to read sealer: %s", err)
 	}
 
+	// we now have downloaded the javascript sealer, we need to
+	// render and evaluate JSTemplate inside the JavascriptEvaluator
+	t := template.Must(template.New("jstemplate").Parse(JSTemplate))
+	buffer := &bytes.Buffer{}
+
+	t.Execute(buffer, struct {
+		Signer, SSN, SC string
+	}{
+		Signer: string(code),
+		SSN:    cpr,
+		SC:     sc,
+	})
+
+	result, err := c.Evaluator(buffer)
+	if err != nil {
+		return fmt.Errorf("could not compute logon package: %s", err)
+	}
+	log.Printf("logonPackage : %s", result)
 	return nil
 }
 

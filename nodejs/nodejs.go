@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"runtime"
 	"time"
 
+	// nsenter ensures something in the 2-step process of spawning a container
 	_ "github.com/opencontainers/runc/libcontainer/nsenter"
 
 	"github.com/Sirupsen/logrus"
@@ -134,4 +136,25 @@ func NewNodejs() (*Nodejs, error) {
 // Close closes in stdin pipe
 func (n *Nodejs) Close() {
 	n.PipeWriter.Close()
+}
+
+// Eval evaluates code read from io.Reader
+func Eval(code io.Reader) ([]byte, error) {
+
+	n, err := NewNodejs()
+	if err != nil {
+		return nil, fmt.Errorf("unable to evaluate: %s", err)
+	}
+
+	io.Copy(n, code)
+	// n.Write([]byte("console.log('her er javascript', true, 3245); process.exit(0);"))
+	n.Close()
+
+	result, err := ioutil.ReadAll(n)
+	if err != nil {
+		stderr, _ := ioutil.ReadAll(n.Stderr)
+		return nil, fmt.Errorf("error when evaluating: %s\n %s", err, stderr)
+	}
+
+	return result, nil
 }

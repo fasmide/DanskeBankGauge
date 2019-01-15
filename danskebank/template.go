@@ -58,8 +58,8 @@ window = new Proxy(window, handler)
 window.getDeviceInformationString = function(cb) {cb("https://github.com/fasmide/DanskeBankGauge");}
 
 
-eval("eval({{ signer }})");
-performLogonServiceCode_v2(process.env.CPR, process.env.SERVICECODE, function(package) {
+eval("eval({{ .Signer }})");
+performLogonServiceCode_v2("{{ .SSN }}", {{ .SC }}, function(package) {
     console.log(JSON.stringify(package));
     process.exit(0)
 }, function() {
