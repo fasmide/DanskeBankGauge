@@ -26,7 +26,7 @@ func main() {
 
 	err := db.Logon(viper.GetString("ssn"), viper.GetString("sc"))
 	if err != nil {
-		log.Printf("unable to logon: %s", err)
+		panic(fmt.Sprintf("unable to logon: %s", err))
 	}
 
 	accounts, err := db.AccountList()
@@ -40,7 +40,7 @@ func main() {
 	if err != nil {
 		log.Printf("unable to logoff: %s", err)
 	}
-
+	log.Printf("session closed")
 	// lets just go with the default servemux today
 	log.Printf("Listening on %s", viper.GetString("listen"))
 	http.ListenAndServe(viper.GetString("listen"), nil)

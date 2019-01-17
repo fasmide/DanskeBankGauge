@@ -40,11 +40,13 @@ func (c *Client) NewRequest(method string, url string, body io.Reader) (*http.Re
 	// Not using the Set here to preserve header case
 	r.Header["x-ibm-client-id"] = []string{c.IbmID}
 	r.Header["x-ibm-client-secret"] = []string{c.IbmSecret}
-	r.Header["x-app-version"] = []string{"MobileBank android DK 1201367"}
-	r.Header["referer"] = []string{"MobileBanking3 DK"}
-	r.Header["x-app-culture"] = []string{"da-DK"}
 
-	r.Header.Set("User-Agent", "okhttp/3.11.0")
+	// the endpoint does not seem to care about these
+	// r.Header["x-app-version"] = []string{"MobileBank android DK 1201367"}
+	// r.Header["referer"] = []string{"MobileBanking3 DK"}
+	// r.Header["x-app-culture"] = []string{"da-DK"}
+	// r.Header.Set("User-Agent", "okhttp/3.11.0")
+
 	return r, nil
 }
 
@@ -91,10 +93,9 @@ func (c *Client) Logon(cpr, sc string) error {
 		return fmt.Errorf("unable to read sealer: %s", err)
 	}
 
-	// save auth token, it must be used on the next request
-	// NewRequest will ensure it is set correctly
-	c.auth = resp.Header.Get("Persistent-Auth")
-	if c.auth == "" {
+	// save temp auth token, it must be used on the next request
+	tempAuthToken := resp.Header.Get("Persistent-Auth")
+	if tempAuthToken == "" {
 		return fmt.Errorf("when fetching javascript sealer, there was no auth token")
 	}
 
@@ -140,6 +141,7 @@ func (c *Client) Logon(cpr, sc string) error {
 	}
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	req.Header["authorization"] = []string{tempAuthToken}
 
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
@@ -169,6 +171,10 @@ const AccountListBody = "{\n    \"languageCode\": \"DA\"\n}"
 
 // AccountList lists all accounts
 func (c *Client) AccountList() ([]Account, error) {
+
+	if c.auth == "" {
+		return nil, fmt.Errorf("This client has not been logged on yet")
+	}
 
 	req, err := c.NewRequest(http.MethodPost, AccountListURL, bytes.NewBuffer([]byte(AccountListBody)))
 	if err != nil {
@@ -212,6 +218,8 @@ func (c *Client) Logoff() error {
 	if err != nil {
 		return fmt.Errorf("unable to create logoff request: %s", err)
 	}
+
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
