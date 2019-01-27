@@ -41,11 +41,12 @@ func (c *Client) NewRequest(method string, url string, body io.Reader) (*http.Re
 	r.Header["x-ibm-client-id"] = []string{c.IbmID}
 	r.Header["x-ibm-client-secret"] = []string{c.IbmSecret}
 
+	r.Header.Set("User-Agent", "Kære danskebank, her er DanskeBankGauge, læs mere https://github.com/fasmide/DanskeBankGauge")
+
 	// the endpoint does not seem to care about these
 	// r.Header["x-app-version"] = []string{"MobileBank android DK 1201367"}
 	// r.Header["referer"] = []string{"MobileBanking3 DK"}
 	// r.Header["x-app-culture"] = []string{"da-DK"}
-	// r.Header.Set("User-Agent", "okhttp/3.11.0")
 
 	return r, nil
 }
