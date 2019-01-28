@@ -5,7 +5,7 @@ We usually make the bank auto transfer a fixed amount to this account and then u
 
 ## Whats in here
 
-* Some arduino firmware for driving a led strip and the gauge it self
+* TODO: Some arduino firmware for driving a led strip and the gauge it self
 * A golang lib for talking to the mobile api
 * A golang daemon that provides a much simpler api to the arduino firmware
 
