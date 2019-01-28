@@ -111,7 +111,6 @@ func NewNodejs() (*Nodejs, error) {
 	// Setup timeout
 	go func() {
 		time.Sleep(time.Second * 5)
-		log.Printf("times up")
 		stdinWriter.Close()
 		process.Signal(os.Kill)
 	}()
