@@ -5,13 +5,18 @@ We usually make the bank auto transfer a fixed amount to this account and then u
 
 ## Whats in here
 
-* Theres some arduino firmware for driving a led strip and the gauge it self
-* Theres some golang code to talk to the bank though the api thats used by the mobile apps
+* Some arduino firmware for driving a led strip and the gauge it self
+* A golang lib for talking to the mobile api
+* A golang daemon that provides a much simpler api to the arduino firmware
 
 ## Firmware
 
 The gauge is just PWM driven with a resistor in series and the led strip is some ws2812 strip i had laying around.
 It pulls a http endpoint providing some simple json to figure out how much money is on the account, its not talking directly to danske bank's api as it proved somewhat challanging and a lot easier to manage on a pc. 
+
+## Daemon
+
+This is just a real simple golang http server which provides a `/balance` endpoint and either asks the bank for data or returns a cached version
 
 ## Danske Bank's Mobileapi
 
@@ -25,5 +30,5 @@ The logon method requires users to post a `LogonPackage` which i have no idea ho
 
 Once you get there, the api is some simple http endpoints which you post some json payloads to and receive various json responses from - i'm only interrested in their `account/list` endpoint as this returns the balance data i need for this project. But i would think it does provide everything thats visible in the mobile app.
 
-On second thought it would have been a lot easier just waiting on their open banking initiative - or maybe even using a third party provider like NordicAPIGateway - these guys provides a single api that covers nearly all the nordic banks - It was just such a good challange to figure out how they do it in the mobile app.
+On second thought it would have been a lot easier just waiting on their open banking initiative - or maybe even using a third party provider like NordicAPIGateway - these guys provides a single api that covers nearly all the nordic banks - This was just such a good challange to figure out how they do it in the mobile app.
 
