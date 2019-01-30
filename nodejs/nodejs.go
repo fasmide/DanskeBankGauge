@@ -16,6 +16,8 @@ import (
 
 	"github.com/opencontainers/runc/libcontainer"
 	"github.com/opencontainers/runc/libcontainer/specconv"
+
+	"golang.org/x/sys/unix"
 )
 
 // Nodejs represents a nodejs process
@@ -127,6 +129,19 @@ func NewNodejs() (*Nodejs, error) {
 		container.Destroy()
 		stdinWriter.Close()
 		stdoutWriter.Close()
+
+		var (
+			ws  unix.WaitStatus
+			rus unix.Rusage
+		)
+
+		// reap any zombie processes left
+		// FIXME: this should properly be done in a loop until no zombies are left
+		_, err = unix.Wait4(-1, &ws, unix.WNOHANG, &rus)
+		if err != nil {
+			log.Printf("wait4 error: %s", err)
+		}
+
 	}()
 
 	return &n, nil
