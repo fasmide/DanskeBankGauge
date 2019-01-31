@@ -9,14 +9,19 @@ import (
 
 func init() {
 	viper.SetDefault("listen", "localhost:1234")
+	viper.SetDefault("mock", false)
 }
 
 func main() {
 
 	viper.AutomaticEnv()
 
-	// lets just go with the default servemux today
-	http.Handle("/balance", NewDaemon())
+	// use mock daemon or the real deal
+	if viper.GetBool("mock") {
+		http.Handle("/balance", NewMockDaemon())
+	} else {
+		http.Handle("/balance", NewDaemon())
+	}
 
 	log.Printf("Listening on %s", viper.GetString("listen"))
 	http.ListenAndServe(viper.GetString("listen"), nil)
