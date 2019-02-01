@@ -13,11 +13,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Balance is the json we will be sending to the gauge
-type Balance struct {
-	Balance float64
-}
-
 // Daemon caches balance and initiates communication to the bank when needed
 type Daemon struct {
 	sync.Mutex

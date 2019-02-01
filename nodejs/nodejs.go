@@ -126,7 +126,11 @@ func NewNodejs() (*Nodejs, error) {
 		}
 
 		// destroy the container.
-		container.Destroy()
+		err = container.Destroy()
+		if err != nil {
+			log.Printf("could not destroy container: %s", err)
+		}
+
 		stdinWriter.Close()
 		stdoutWriter.Close()
 
