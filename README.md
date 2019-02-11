@@ -5,7 +5,7 @@ We usually make the bank auto transfer a fixed amount to this account and then u
 
 ## Whats in here
 
-* TODO: Some arduino firmware for driving a led strip and the gauge it self
+* Some arduino firmware for driving a led strip and the gauge it self
 * A golang lib for talking to the mobile api
 * A golang daemon that provides a much simpler api to the arduino firmware
 
@@ -32,3 +32,11 @@ Once you get there, the api is some simple http endpoints which you post some js
 
 On second thought it would have been a lot easier just waiting on their open banking initiative - or maybe even using a third party provider like NordicAPIGateway - these guys provides a single api that covers nearly all the nordic banks - This was just such a good challange to figure out how they do it in the mobile app.
 
+## What does it look like?
+
+Its a giant gauge that i had been sitting in my lab for a few years just waiting for an opportunity to do something useful. If we are spending the account's balance too slow it turns green and if we had just a little too meny pizzas it turns red :) 
+
+[![DB Gauge](https://img.youtube.com/vi/A176qIdmtdE/0.jpg)](https://www.youtube.com/watch?v=A176qIdmtdE)
+
+Here im just testing out its functionality
+[![Disco gauge](https://img.youtube.com/vi/2FOa_tpI1xw/0.jpg)](https://www.youtube.com/watch?v=2FOa_tpI1xw)
