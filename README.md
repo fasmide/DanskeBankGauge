@@ -1,6 +1,6 @@
 # Readme
 
-This project is about making a gauge sitting on my fridge displaying the amount of money is available on our households food bank account
+This project is about making a gauge sitting on my fridge displaying the amount of money is available on our household bank account
 We usually make the bank auto transfer a fixed amount to this account and then use it thoughout the month to buy everyday stuff - but somehow we forget to check if there is any funds available on it - this should fix that by bringing the data directly to the kitchen
 
 ## Whats in here
@@ -34,7 +34,7 @@ On second thought it would have been a lot easier just waiting on their open ban
 
 ## What does it look like?
 
-Its a giant gauge that i had been sitting in my lab for a few years just waiting for an opportunity to do something useful. If we are spending the account's balance too slow it turns green and if we had just a little too meny pizzas it turns red :) 
+Its a giant gauge that i had been sitting in my lab for a few years just waiting for an opportunity to do something useful. If we are spending the account's balance too slow it turns green and if we had just a little too many pizzas it turns red :) 
 
 [![DB Gauge](https://img.youtube.com/vi/A176qIdmtdE/0.jpg)](https://www.youtube.com/watch?v=A176qIdmtdE)
 
