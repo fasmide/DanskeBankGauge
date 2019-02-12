@@ -1,6 +1,7 @@
 # Readme
 
-This project is about making a gauge sitting on my fridge displaying the amount of money is available on our household bank account
+This project is about making a gauge sitting on my fridge displaying the amount of money is available on our household bank account.
+
 We usually make the bank auto transfer a fixed amount to this account and then use it thoughout the month to buy everyday stuff - but somehow we forget to check if there is any funds available on it - this should fix that by bringing the data directly to the kitchen
 
 ## Whats in here
