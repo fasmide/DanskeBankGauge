@@ -22,11 +22,11 @@ type Balance struct {
 func (b Balance) MarshalJSON() ([]byte, error) {
 	return json.Marshal(
 		struct {
-			Balance   float64 `json:"balance"`
-			Allowance float64 `json:"allowance"`
+			Balance   int `json:"balance"`
+			Allowance int `json:"allowance"`
 		}{
-			Balance:   b.Balance,
-			Allowance: b.Allowance(),
+			Balance:   int(b.Balance),
+			Allowance: int(b.Allowance()),
 		},
 	)
 }
