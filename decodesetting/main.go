@@ -10,7 +10,9 @@ import (
 )
 
 // MagicLocation is where we start to find bytes from the key material
-const MagicLocation = 0x108
+// notice this seems to change from time to time
+// const MagicLocation = 0x108
+const MagicLocation = 0x1DD
 
 // this app is about loading some key material and then decrypt strings read from stdin
 func main() {
